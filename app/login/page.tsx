@@ -29,7 +29,7 @@ export default function LoginPage() {
           className="max-w-md w-full space-y-8"
         >
           <div className="text-center">
-            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+            <h2 className="text-4xl font-bold mb-2 bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
               Chào mừng trở lại!
             </h2>
             <p className="text-gray-600">
@@ -47,7 +47,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
                 >
                   Email
                 </label>
@@ -65,7 +65,7 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
                 >
                   Password
                 </label>
@@ -78,6 +78,7 @@ export default function LoginPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="••••••••"
                 />
+                
               </div>
 
               <div className="flex items-center justify-between">
@@ -107,7 +108,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition shadow-lg hover:shadow-xl"
+                className="w-full py-3 text-white bg-linear-to-r from-blue-500 via-purple-600 to-pink-600  rounded-xl font-semibold shadow-xl hover:shadow-2xl hover:shadow-purple-500/50 transition-all"
               >
                 Đăng nhập
               </button>
