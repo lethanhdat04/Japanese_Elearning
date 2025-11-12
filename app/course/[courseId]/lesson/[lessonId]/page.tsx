@@ -126,10 +126,10 @@ export default function LessonPage() {
               {/* Left Side - Video Player */}
               <div className="lg:col-span-2 space-y-6">
                 <VideoPlayer
-                  videoUrl={lesson.videoUrl}
+                  videoUrl={lesson.videoUrl || ""}
                   title={lesson.title}
-                  description={lesson.description}
-                  keyPoints={lesson.keyPoints}
+                  description={lesson.description || ""}
+                  keyPoints={lesson.keyPoints || []}
                   duration={lesson.duration}
                   courseId={courseId}
                   lessonId={lessonId}
