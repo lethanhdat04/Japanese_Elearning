@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiSearch, FiHome, FiBookOpen, FiUser, FiLogOut } from "react-icons/fi";
+import { FiSearch, FiHome, FiBookOpen, FiMusic, FiUser, FiLogOut } from "react-icons/fi";
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,6 +74,17 @@ export default function Navbar() {
               >
                 <FiBookOpen className="w-4 h-4" />
                 <span className="font-medium">Courses</span>
+              </Link>
+              <Link
+                href="/music"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  isActive("/music")
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <FiMusic className="w-4 h-4" />
+                <span className="font-medium">Music</span>
               </Link>
               <Link
                 href="/profile"

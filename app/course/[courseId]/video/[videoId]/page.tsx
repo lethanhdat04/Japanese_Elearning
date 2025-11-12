@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { FiCheck } from "react-icons/fi";
 import Layout from "../../../../components/Layout";
 import VideoPlayer from "../../../../components/VideoPlayer";
 import VideoChatbot from "../../../../components/VideoChatbot";
@@ -15,6 +17,21 @@ export default function VideoPage() {
 
   const course = courses.find((c) => c.id === courseId);
   const video = course?.videos.find((v) => v.id === videoId);
+  const [completedVideos, setCompletedVideos] = useState<Set<number>>(new Set());
+
+  // Load completion status for all videos
+  useEffect(() => {
+    if (course) {
+      const completed = new Set<number>();
+      course.videos.forEach((v) => {
+        const completionKey = `video_completed_${courseId}_${v.id}`;
+        if (localStorage.getItem(completionKey) === "true") {
+          completed.add(v.id);
+        }
+      });
+      setCompletedVideos(completed);
+    }
+  }, [course, courseId]);
 
   if (!course || !video) {
     return (
@@ -103,6 +120,8 @@ export default function VideoPage() {
                 description={video.description}
                 keyPoints={video.keyPoints}
                 duration={video.duration}
+                courseId={courseId}
+                videoId={videoId}
               />
 
               {/* Course Info */}
@@ -200,17 +219,31 @@ export default function VideoPage() {
                         onClick={() =>
                           router.push(`/course/${courseId}/video/${otherVideo.id}`)
                         }
-                        className="w-full flex items-start p-3 rounded-lg hover:bg-gray-50 transition text-left"
+                        className="w-full flex items-start p-3 rounded-lg hover:bg-gray-50 transition text-left relative"
                       >
-                        <img
-                          src={otherVideo.thumbnail}
-                          alt={otherVideo.title}
-                          className="w-24 h-16 object-cover rounded mr-3 flex-shrink-0"
-                        />
+                        <div className="relative">
+                          <img
+                            src={otherVideo.thumbnail}
+                            alt={otherVideo.title}
+                            className="w-24 h-16 object-cover rounded mr-3 flex-shrink-0"
+                          />
+                          {completedVideos.has(otherVideo.id) && (
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded mr-3">
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <FiCheck className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
-                            {otherVideo.title}
-                          </h4>
+                          <div className="flex items-center gap-1 mb-1">
+                            <h4 className="text-sm font-semibold text-gray-900 line-clamp-2">
+                              {otherVideo.title}
+                            </h4>
+                            {completedVideos.has(otherVideo.id) && (
+                              <FiCheck className="w-3 h-3 text-green-500 flex-shrink-0" />
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">{otherVideo.duration}</p>
                         </div>
                       </button>

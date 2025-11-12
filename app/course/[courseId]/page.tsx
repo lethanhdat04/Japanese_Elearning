@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { FiCheck } from "react-icons/fi";
 import Layout from "../../components/Layout";
 import ChatbotWidget from "../../components/ChatbotWidget";
 import { courses } from "../../lib/mockData";
@@ -11,6 +13,26 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const courseId = parseInt(params.courseId as string);
   const course = courses.find((c) => c.id === courseId);
+  const [completedVideos, setCompletedVideos] = useState<Set<number>>(new Set());
+
+  // Load completion status for all videos
+  useEffect(() => {
+    if (course) {
+      const completed = new Set<number>();
+      course.videos.forEach((video) => {
+        const completionKey = `video_completed_${courseId}_${video.id}`;
+        if (localStorage.getItem(completionKey) === "true") {
+          completed.add(video.id);
+        }
+      });
+      setCompletedVideos(completed);
+    }
+  }, [course, courseId]);
+
+  // Calculate completion percentage
+  const completionPercentage = course
+    ? Math.round((completedVideos.size / course.videos.length) * 100)
+    : 0;
 
   if (!course) {
     return (
@@ -92,13 +114,24 @@ export default function CourseDetailPage() {
                     {course.lessonsCount} bài học
                   </div>
                 </div>
+                {/* Progress Bar */}
+                <div className="mt-6 bg-white/20 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-white h-full rounded-full transition-all duration-500"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+                <p className="text-sm text-white/90 mt-2">
+                  Hoàn thành {completedVideos.size}/{course.videos.length} bài học ({completionPercentage}%)
+                </p>
+
                 <button
                   onClick={() =>
                     router.push(`/course/${courseId}/video/${course.videos[0].id}`)
                   }
-                  className="mt-8 bg-white text-blue-500 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-lg"
+                  className="mt-6 bg-white text-blue-500 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-lg"
                 >
-                  Bắt đầu học
+                  {completedVideos.size > 0 ? "Tiếp tục học" : "Bắt đầu học"}
                 </button>
               </div>
               <div className="hidden md:block">
@@ -146,23 +179,37 @@ export default function CourseDetailPage() {
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-10 w-10 text-white"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
+                            {completedVideos.has(video.id) ? (
+                              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                                <FiCheck className="w-7 h-7 text-white" />
+                              </div>
+                            ) : (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-10 w-10 text-white"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            )}
                           </div>
                           <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
                             {video.duration}
                           </div>
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                            {video.title}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {video.title}
+                            </h3>
+                            {completedVideos.has(video.id) && (
+                              <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                                <FiCheck className="w-3 h-3" />
+                                Đã xem
+                              </div>
+                            )}
+                          </div>
                           <div className="flex items-center text-sm text-gray-500">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -185,9 +232,13 @@ export default function CourseDetailPage() {
                           onClick={() =>
                             router.push(`/course/${courseId}/video/${video.id}`)
                           }
-                          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+                          className={`px-4 py-2 rounded-lg transition font-medium ${
+                            completedVideos.has(video.id)
+                              ? "bg-green-500 text-white hover:bg-green-600"
+                              : "bg-blue-500 text-white hover:bg-blue-600"
+                          }`}
                         >
-                          Xem
+                          {completedVideos.has(video.id) ? "Xem lại" : "Xem"}
                         </button>
                       </div>
                     </motion.div>

@@ -39,7 +39,7 @@ export default function HomePage() {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-4xl font-bold mb-4">
-                Xin chào! Chào mừng bạn đến với NihongoLearn
+                Xin chào! Chào mừng bạn đến với WabiSabi
               </h1>
               <p className="text-xl text-blue-100">
                 {userLevel
