@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { chatbotResponses } from "../lib/mockData";
 
 interface Message {
   id: number;
@@ -22,10 +21,20 @@ export default function ChatbotWidget() {
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
 
     // Add user message
     const userMessage: Message = {
@@ -35,19 +44,49 @@ export default function ChatbotWidget() {
       timestamp: new Date(),
     };
 
-    setMessages([...messages, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputMessage("");
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call API
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+
       const botResponse: Message = {
-        id: messages.length + 2,
-        text: chatbotResponses[Math.floor(Math.random() * chatbotResponses.length)],
+        id: newMessages.length + 1,
+        text: data.message,
         sender: "bot",
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error("Error:", error);
+      const errorMessage: Message = {
+        id: newMessages.length + 1,
+        text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -125,7 +164,7 @@ export default function ChatbotWidget() {
                         : "bg-gray-200 text-gray-800"
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                     <p
                       className={`text-xs mt-1 ${
                         message.sender === "user" ? "text-blue-100" : "text-gray-500"
@@ -139,6 +178,28 @@ export default function ChatbotWidget() {
                   </div>
                 </div>
               ))}
+
+              {/* Typing indicator */}
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex justify-start"
+                  >
+                    <div className="bg-gray-200 p-3 rounded-lg">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
@@ -149,11 +210,13 @@ export default function ChatbotWidget() {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Nhập câu hỏi của bạn..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+                  disabled={isLoading}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

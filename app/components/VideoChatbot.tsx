@@ -31,6 +31,7 @@ export default function VideoChatbot({ context, videoTitle }: VideoChatbotProps)
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -41,40 +42,9 @@ export default function VideoChatbot({ context, videoTitle }: VideoChatbotProps)
     scrollToBottom();
   }, [messages]);
 
-  const findBestAnswer = (userQuestion: string): string => {
-    const lowerQuestion = userQuestion.toLowerCase();
-
-    // Search through knowledge base
-    for (const item of context.knowledgeBase) {
-      if (lowerQuestion.includes(item.q.toLowerCase())) {
-        return item.a;
-      }
-    }
-
-    // Check for common keywords
-    if (lowerQuestion.includes("bài tập") || lowerQuestion.includes("luyện tập")) {
-      return "Bạn có thể làm bài tập thực hành ở cuối video. Nếu cần giải thích chi tiết hơn, hãy cho tôi biết phần nào bạn đang thắc mắc nhé!";
-    }
-
-    if (lowerQuestion.includes("xem lại") || lowerQuestion.includes("phút")) {
-      return "Bạn có thể tua video đến thời điểm cụ thể bằng cách click vào thanh timeline phía dưới video. Bạn cần xem lại phần nào trong bài?";
-    }
-
-    if (lowerQuestion.includes("khó") || lowerQuestion.includes("không hiểu")) {
-      return `Đừng lo! ${context.topic} có thể hơi khó lúc đầu. Hãy thử xem lại video từ từ, và tập trung vào từng phần nhỏ. Bạn thắc mắc ở phần nào cụ thể?`;
-    }
-
-    if (lowerQuestion.includes("cảm ơn") || lowerQuestion.includes("thanks")) {
-      return "Không có gì! Tôi luôn sẵn sàng giúp bạn học tốt hơn. Còn câu hỏi nào khác không?";
-    }
-
-    // Default response
-    return `Câu hỏi hay đấy! Về chủ đề "${context.topic}", tôi có thể giúp bạn với: ${context.knowledgeBase.slice(0, 2).map(kb => kb.q).join(", ")}. Bạn muốn tìm hiểu về phần nào?`;
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
 
     // Add user message
     const userMessage: Message = {
@@ -84,21 +54,58 @@ export default function VideoChatbot({ context, videoTitle }: VideoChatbotProps)
       timestamp: new Date(),
     };
 
-    setMessages([...messages, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputMessage("");
     setIsTyping(true);
+    setIsLoading(true);
 
-    // Simulate bot thinking and response
-    setTimeout(() => {
+    try {
+      // Call API with video context
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+          context: {
+            type: "video",
+            videoTitle,
+            topic: context.topic,
+            knowledgeBase: context.knowledgeBase,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+
       setIsTyping(false);
       const botResponse: Message = {
-        id: messages.length + 2,
-        text: findBestAnswer(inputMessage),
+        id: newMessages.length + 1,
+        text: data.message,
         sender: "bot",
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, botResponse]);
-    }, 1000 + Math.random() * 1000);
+    } catch (error) {
+      console.error("Error:", error);
+      setIsTyping(false);
+      const errorMessage: Message = {
+        id: newMessages.length + 1,
+        text: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Quick questions
@@ -228,12 +235,12 @@ export default function VideoChatbot({ context, videoTitle }: VideoChatbotProps)
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Hỏi về nội dung bài học..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            disabled={isTyping}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={isTyping}
+            disabled={isLoading}
             className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
