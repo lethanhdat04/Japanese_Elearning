@@ -128,16 +128,33 @@ export const isCourseCompleted = (courseId, lessons) => {
 };
 
 /**
- * Get next unlocked lesson
+ * Get next unlocked lesson after current lesson
  */
-export const getNextLesson = (courseId, lessons) => {
-  for (const lesson of lessons) {
-    const progress = getLessonProgress(courseId, lesson.id);
-    if (!progress.completed && isLessonUnlocked(courseId, lesson, lessons)) {
+export const getNextLesson = (courseId, lessons, currentLessonId = null) => {
+  // If no current lesson specified, return first incomplete lesson
+  if (!currentLessonId) {
+    for (const lesson of lessons) {
+      const progress = getLessonProgress(courseId, lesson.id);
+      if (!progress.completed && isLessonUnlocked(courseId, lesson, lessons)) {
+        return lesson;
+      }
+    }
+    return null;
+  }
+
+  // Find current lesson index
+  const currentIndex = lessons.findIndex((l) => l.id === currentLessonId);
+  if (currentIndex === -1) return null;
+
+  // Find next lesson after current lesson
+  for (let i = currentIndex + 1; i < lessons.length; i++) {
+    const lesson = lessons[i];
+    if (isLessonUnlocked(courseId, lesson, lessons)) {
       return lesson;
     }
   }
-  return null; // All lessons completed
+
+  return null; // No more lessons
 };
 
 /**

@@ -22,6 +22,7 @@ export default function LessonPage() {
   const lesson = course.lessons.find((l) => l.id === lessonId);
 
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Force re-render lesson list
 
   useEffect(() => {
     if (lesson) {
@@ -60,14 +61,12 @@ export default function LessonPage() {
 
   // Route to appropriate component based on lesson type
   if (lesson.type === "video") {
-    const handleVideoComplete = () => {
-      const nextLesson = getNextLesson(courseId, course.lessons);
+    // Get next lesson info - pass current lesson id to get next lesson after current
+    const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
 
-      if (nextLesson) {
-        router.push(`/course/${courseId}/lesson/${nextLesson.id}`);
-      } else {
-        router.push(`/course/${courseId}`);
-      }
+    // Handle video completion - refresh lesson list
+    const handleVideoCompleted = () => {
+      setRefreshKey(prev => prev + 1); // Trigger re-render
     };
 
     return (
@@ -133,7 +132,9 @@ export default function LessonPage() {
                   duration={lesson.duration}
                   courseId={courseId}
                   lessonId={lessonId}
-                  onComplete={handleVideoComplete}
+                  nextLessonTitle={nextLesson?.title}
+                  nextLessonId={nextLesson?.id}
+                  onComplete={handleVideoCompleted}
                 />
 
                 {/* Course Info */}
@@ -217,6 +218,7 @@ export default function LessonPage() {
 
                 {/* Lesson List */}
                 <motion.div
+                  key={refreshKey}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
@@ -304,13 +306,19 @@ export default function LessonPage() {
 
   if (lesson.type === "quiz" || lesson.type === "final-test") {
     const handleQuizComplete = () => {
-      const nextLesson = getNextLesson(courseId, course.lessons);
+      // Refresh lesson list
+      setRefreshKey(prev => prev + 1);
 
-      if (nextLesson) {
-        router.push(`/course/${courseId}/lesson/${nextLesson.id}`);
-      } else {
-        router.push(`/course/${courseId}`);
-      }
+      // Auto-navigate to next lesson after completing quiz
+      const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
+
+      setTimeout(() => {
+        if (nextLesson) {
+          router.push(`/course/${courseId}/lesson/${nextLesson.id}`);
+        } else {
+          router.push(`/course/${courseId}`);
+        }
+      }, 2000); // Wait 2 seconds before navigating
     };
 
     return (
@@ -345,13 +353,19 @@ export default function LessonPage() {
 
   if (lesson.type === "pronunciation") {
     const handlePronunciationComplete = () => {
-      const nextLesson = getNextLesson(courseId, course.lessons);
+      // Refresh lesson list
+      setRefreshKey(prev => prev + 1);
 
-      if (nextLesson) {
-        router.push(`/course/${courseId}/lesson/${nextLesson.id}`);
-      } else {
-        router.push(`/course/${courseId}`);
-      }
+      // Auto-navigate to next lesson
+      const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
+
+      setTimeout(() => {
+        if (nextLesson) {
+          router.push(`/course/${courseId}/lesson/${nextLesson.id}`);
+        } else {
+          router.push(`/course/${courseId}`);
+        }
+      }, 2000); // Wait 2 seconds before navigating
     };
 
     return (

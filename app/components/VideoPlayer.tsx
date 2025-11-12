@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { FiCheck, FiClock } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiCheck, FiClock, FiCheckCircle, FiArrowRight, FiX } from "react-icons/fi";
 import { completeLesson, updateLessonProgress, getLessonProgress } from "../lib/progressTracker";
 
 interface VideoPlayerProps {
@@ -14,6 +15,8 @@ interface VideoPlayerProps {
   courseId: number;
   lessonId: string;
   onComplete?: () => void;
+  nextLessonTitle?: string;
+  nextLessonId?: string;
 }
 
 export default function VideoPlayer({
@@ -25,19 +28,34 @@ export default function VideoPlayer({
   courseId,
   lessonId,
   onComplete,
+  nextLessonTitle,
+  nextLessonId,
 }: VideoPlayerProps) {
+  const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(false);
   const [watchTime, setWatchTime] = useState(0); // Percentage watched
+  const [showCompletionNotice, setShowCompletionNotice] = useState(false);
   const playerRef = useRef<any>(null);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const noticeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoCompletedRef = useRef(false); // Track if already auto-completed
 
   const COMPLETION_THRESHOLD = 80; // 80% watched to auto-complete
 
   // Load progress from tracker
   useEffect(() => {
+    // Reset flag when changing lessons
+    hasAutoCompletedRef.current = false;
+
     const progress = getLessonProgress(courseId, lessonId);
-    setIsCompleted(progress.completed || false);
+    const completed = progress.completed || false;
+    setIsCompleted(completed);
     setWatchTime(progress.watchTime || 0);
+
+    // If already completed, set the ref to prevent re-triggering
+    if (completed) {
+      hasAutoCompletedRef.current = true;
+    }
   }, [courseId, lessonId]);
 
   // Initialize YouTube IFrame API
@@ -63,12 +81,19 @@ export default function VideoPlayer({
     }
 
     return () => {
+      // Cleanup interval
       if (updateIntervalRef.current) {
         clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
       }
       // Cleanup player
       if (playerRef.current && playerRef.current.destroy) {
-        playerRef.current.destroy();
+        try {
+          playerRef.current.destroy();
+        } catch (e) {
+          // Ignore destroy errors
+        }
+        playerRef.current = null;
       }
     };
   }, [videoUrl]);
@@ -100,13 +125,20 @@ export default function VideoPlayer({
     if (event.data === 1) {
       startTracking();
     }
-    // Paused or ended
-    else if (event.data === 2 || event.data === 0) {
+    // Paused
+    else if (event.data === 2) {
       stopTracking();
+    }
+    // Ended (video finished 100%)
+    else if (event.data === 0) {
+      stopTracking();
+      updateWatchProgress();
 
-      // Check completion when video ends
-      if (event.data === 0) {
-        updateWatchProgress();
+      // Auto-navigate to next lesson when video ends
+      if (nextLessonId && nextLessonTitle) {
+        setTimeout(() => {
+          router.push(`/course/${courseId}/lesson/${nextLessonId}`);
+        }, 2000); // Wait 2 seconds before navigating
       }
     }
   };
@@ -145,8 +177,9 @@ export default function VideoPlayer({
           lastWatched: new Date().toISOString(),
         });
 
-        // Auto-complete at 80%
-        if (percentage >= COMPLETION_THRESHOLD && !isCompleted) {
+        // Auto-complete at 80% - ONLY ONCE
+        if (percentage >= COMPLETION_THRESHOLD && !hasAutoCompletedRef.current) {
+          hasAutoCompletedRef.current = true; // Set flag before calling
           handleAutoComplete(percentage);
         }
       }
@@ -161,10 +194,34 @@ export default function VideoPlayer({
       autoCompleted: true,
     });
 
+    // Notify parent to refresh lesson list ONCE
     if (onComplete) {
       onComplete();
     }
+
+    // Show completion notice
+    setShowCompletionNotice(true);
+
+    // Clear existing timeout if any
+    if (noticeTimeoutRef.current) {
+      clearTimeout(noticeTimeoutRef.current);
+    }
+
+    // Auto-hide notice after 10 seconds
+    noticeTimeoutRef.current = setTimeout(() => {
+      setShowCompletionNotice(false);
+      noticeTimeoutRef.current = null;
+    }, 10000);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (noticeTimeoutRef.current) {
+        clearTimeout(noticeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Manual completion toggle
   const toggleCompletion = () => {
@@ -172,27 +229,93 @@ export default function VideoPlayer({
     setIsCompleted(newStatus);
 
     if (newStatus) {
+      hasAutoCompletedRef.current = true; // Set flag to prevent re-triggering
       completeLesson(courseId, lessonId, {
         watchTime: Math.max(watchTime, COMPLETION_THRESHOLD),
         manuallyCompleted: true,
       });
+
+      // Notify parent to refresh lesson list
+      if (onComplete) {
+        onComplete();
+      }
     } else {
+      hasAutoCompletedRef.current = false; // Reset flag when uncompleting
       updateLessonProgress(courseId, lessonId, {
         completed: false,
         watchTime: watchTime,
       });
+
+      // Notify parent to refresh lesson list
+      if (onComplete) {
+        onComplete();
+      }
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-white rounded-lg shadow-lg overflow-hidden"
-    >
-      {/* Video Player */}
-      <div className="relative pt-[56.25%] bg-gray-900">
+    <>
+      {/* Completion Notice */}
+      <AnimatePresence>
+        {showCompletionNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+          >
+            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-2xl relative">
+              {/* Close button */}
+              <button
+                onClick={() => setShowCompletionNotice(false)}
+                className="absolute top-3 right-3 text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1 transition"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-start gap-3">
+                <FiCheckCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 pr-6">
+                  <p className="font-bold text-lg mb-1">🎉 Bài học đã hoàn thành!</p>
+                  {nextLessonTitle && nextLessonId ? (
+                    <>
+                      <p className="text-sm text-green-100 mb-2">
+                        Bài tiếp theo đã được mở khóa:
+                      </p>
+                      <div className="bg-white/20 rounded-lg px-3 py-2 mb-3">
+                        <p className="text-sm font-semibold">{nextLessonTitle}</p>
+                      </div>
+                      <p className="text-xs text-green-100 mb-3">
+                        💡 Xem hết video để tự động chuyển sang bài tiếp theo
+                      </p>
+                      <button
+                        onClick={() => router.push(`/course/${courseId}/lesson/${nextLessonId}`)}
+                        className="w-full bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-green-50 transition flex items-center justify-center gap-2"
+                      >
+                        Chuyển ngay
+                        <FiArrowRight className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-green-100">
+                      Chúc mừng! Bạn đã hoàn thành tất cả bài học.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-white rounded-lg shadow-lg overflow-hidden"
+      >
+        {/* Video Player */}
+        <div className="relative pt-[56.25%] bg-gray-900">
         {extractYouTubeVideoId(videoUrl) ? (
           <div
             id="youtube-player"
@@ -315,5 +438,6 @@ export default function VideoPlayer({
         </div>
       </div>
     </motion.div>
+    </>
   );
 }
