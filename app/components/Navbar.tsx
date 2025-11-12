@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiSearch, FiHome, FiBookOpen, FiMusic, FiUser, FiLogOut } from "react-icons/fi";
+import Image from "next/image";
+import {
+  FiSearch,
+  FiHome,
+  FiBookOpen,
+  FiMusic,
+  FiUser,
+  FiLogOut,
+} from "react-icons/fi";
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,7 +20,8 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   // Check if user is logged in (simple check based on pathname)
-  const isLoggedIn = pathname !== "/" && pathname !== "/login";
+  const isLoggedIn =
+    pathname !== "/" && pathname !== "/login" && pathname !== "/signup";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,12 +34,22 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href={isLoggedIn ? "/home" : "/"} className="flex items-center group">
+          <Link
+            href={isLoggedIn ? "/home" : "/"}
+            className="flex items-center group"
+          >
+            <Image
+              src="/logo.png"
+              alt="WabiSabi Logo"
+              width={42}
+              height={42}
+              className="transition-transform duration-300 group-hover:scale-110"
+            />
             <div className="relative">
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              <span className="px-2 text-2xl font-extrabold bg-linear-to-r from-blue-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 WabiSabi
               </span>
-              <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-500 group-hover:w-full transition-all duration-300"></div>
+              <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-linear-to-r from-blue-600 to-purple-500 group-hover:w-full transition-all duration-300"></div>
             </div>
           </Link>
 
@@ -57,7 +76,7 @@ export default function Navbar() {
                 href="/home"
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isActive("/home")
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -68,7 +87,7 @@ export default function Navbar() {
                 href="/home"
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   pathname.startsWith("/course")
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -79,7 +98,7 @@ export default function Navbar() {
                 href="/music"
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isActive("/music")
-                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
+                    ? "bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -90,7 +109,7 @@ export default function Navbar() {
                 href="/profile"
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isActive("/profile")
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30"
+                    ? "bg-linear-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -105,7 +124,7 @@ export default function Navbar() {
                 <span className="font-medium">Logout</span>
               </Link>
               {/* User Avatar */}
-              <div className="ml-2 w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200">
+              <div className="ml-2 w-10 h-10 bg-linear-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold shadow-lg cursor-pointer hover:scale-110 transition-transform duration-200">
                 U
               </div>
             </div>
@@ -113,9 +132,16 @@ export default function Navbar() {
             <div className="flex items-center space-x-4">
               <Link
                 href="/login"
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-200 font-medium"
+                className="px-4 flex-col text-lg font-bold text-gray-700 hover:text-gray-900"
+                //className="px-6 py-2.5 bg-linear-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-200 font-medium"
               >
                 Login
+              </Link>
+              <Link
+                href="/signup"
+                className="px-6 py-2.5 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition-all duration-200 font-bold"
+              >
+                Signup
               </Link>
             </div>
           )}

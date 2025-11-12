@@ -89,7 +89,7 @@ export default function SignUpPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Họ và tên
                   </label>
                   <div className="relative">
@@ -107,7 +107,7 @@ export default function SignUpPage() {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Email
                   </label>
                   <div className="relative">
@@ -125,7 +125,7 @@ export default function SignUpPage() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Mật khẩu
                   </label>
                   <div className="relative">
@@ -167,7 +167,7 @@ export default function SignUpPage() {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Xác nhận mật khẩu
                   </label>
                   <div className="relative">
@@ -236,7 +236,7 @@ export default function SignUpPage() {
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">Hoặc đăng ký với</span>
+                    <span className="px-2 bg-white/80 backdrop-blur-xl text-gray-500">Hoặc đăng ký với</span>
                   </div>
                 </div>
 

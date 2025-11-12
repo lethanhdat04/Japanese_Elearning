@@ -28,7 +28,7 @@ export default function MusicPage() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 text-white py-16">
+        <div className="py-10 bg-linear-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
