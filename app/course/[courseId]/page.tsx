@@ -3,36 +3,81 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { FiCheck } from "react-icons/fi";
+import { FiCheck, FiLock, FiPlay, FiFileText, FiMic, FiAward } from "react-icons/fi";
 import Layout from "../../components/Layout";
 import ChatbotWidget from "../../components/ChatbotWidget";
-import { courses } from "../../lib/mockData";
+import { sampleCourseWithProgression } from "../../lib/lessonTypes";
+import {
+  getCourseProgress,
+  isLessonUnlocked,
+  calculateCourseCompletion,
+  getLessonProgress,
+} from "../../lib/progressTracker";
 
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = parseInt(params.courseId as string);
-  const course = courses.find((c) => c.id === courseId);
-  const [completedVideos, setCompletedVideos] = useState<Set<number>>(new Set());
 
-  // Load completion status for all videos
+  // For now, using sample course. In production, fetch by courseId
+  const course = sampleCourseWithProgression;
+
+  const [courseProgress, setCourseProgress] = useState({});
+  const [completionStats, setCompletionStats] = useState({ completed: 0, total: 0, percentage: 0 });
+
+  // Load progress data
   useEffect(() => {
-    if (course) {
-      const completed = new Set<number>();
-      course.videos.forEach((video) => {
-        const completionKey = `video_completed_${courseId}_${video.id}`;
-        if (localStorage.getItem(completionKey) === "true") {
-          completed.add(video.id);
-        }
-      });
-      setCompletedVideos(completed);
-    }
-  }, [course, courseId]);
+    const progress = getCourseProgress(courseId);
+    setCourseProgress(progress);
 
-  // Calculate completion percentage
-  const completionPercentage = course
-    ? Math.round((completedVideos.size / course.videos.length) * 100)
-    : 0;
+    const stats = calculateCourseCompletion(courseId, course.lessons);
+    setCompletionStats(stats);
+  }, [courseId]);
+
+  // Get lesson type icon
+  const getLessonIcon = (type: string) => {
+    switch (type) {
+      case "video":
+        return <FiPlay className="w-5 h-5" />;
+      case "quiz":
+        return <FiFileText className="w-5 h-5" />;
+      case "pronunciation":
+        return <FiMic className="w-5 h-5" />;
+      case "final-test":
+        return <FiAward className="w-5 h-5" />;
+      default:
+        return <FiPlay className="w-5 h-5" />;
+    }
+  };
+
+  // Get lesson type color
+  const getLessonColor = (type: string) => {
+    switch (type) {
+      case "video":
+        return "text-blue-500 bg-blue-50";
+      case "quiz":
+        return "text-purple-500 bg-purple-50";
+      case "pronunciation":
+        return "text-pink-500 bg-pink-50";
+      case "final-test":
+        return "text-orange-500 bg-orange-50";
+      default:
+        return "text-blue-500 bg-blue-50";
+    }
+  };
+
+  // Handle lesson click
+  const handleLessonClick = (lesson: any) => {
+    const unlocked = isLessonUnlocked(courseId, lesson, course.lessons);
+
+    if (!unlocked) {
+      alert("Bạn cần hoàn thành bài học trước đó để mở khóa bài này!");
+      return;
+    }
+
+    // Navigate to lesson page based on type
+    router.push(`/course/${courseId}/lesson/${lesson.id}`);
+  };
 
   if (!course) {
     return (
@@ -111,27 +156,27 @@ export default function CourseDetailPage() {
                         d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                       />
                     </svg>
-                    {course.lessonsCount} bài học
+                    {course.lessons.length} bài học
                   </div>
                 </div>
                 {/* Progress Bar */}
                 <div className="mt-6 bg-white/20 rounded-full h-3 overflow-hidden">
                   <div
                     className="bg-white h-full rounded-full transition-all duration-500"
-                    style={{ width: `${completionPercentage}%` }}
+                    style={{ width: `${completionStats.percentage}%` }}
                   />
                 </div>
                 <p className="text-sm text-white/90 mt-2">
-                  Hoàn thành {completedVideos.size}/{course.videos.length} bài học ({completionPercentage}%)
+                  Hoàn thành {completionStats.completed}/{completionStats.total} bài học ({completionStats.percentage}%)
                 </p>
 
                 <button
                   onClick={() =>
-                    router.push(`/course/${courseId}/video/${course.videos[0].id}`)
+                    router.push(`/course/${courseId}/lesson/${course.lessons[0].id}`)
                   }
                   className="mt-6 bg-white text-blue-500 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition shadow-lg"
                 >
-                  {completedVideos.size > 0 ? "Tiếp tục học" : "Bắt đầu học"}
+                  {completionStats.completed > 0 ? "Tiếp tục học" : "Bắt đầu học"}
                 </button>
               </div>
               <div className="hidden md:block">
@@ -148,7 +193,7 @@ export default function CourseDetailPage() {
         {/* Course Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content - Video List */}
+            {/* Main Content - Lesson List */}
             <div className="lg:col-span-2">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -156,93 +201,107 @@ export default function CourseDetailPage() {
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <div className="flex items-center mb-6">
-                  <div className="w-1 h-8 bg-blue-500 mr-4"></div>
+                  <div className="w-1 h-8 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 mr-4"></div>
                   <h2 className="text-3xl font-bold text-gray-900">
                     Nội dung khóa học
                   </h2>
                 </div>
 
-                <div className="space-y-4">
-                  {course.videos.map((video, index) => (
-                    <motion.div
-                      key={video.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      className="bg-white rounded-lg shadow-md hover:shadow-xl transition overflow-hidden"
-                    >
-                      <div className="flex items-center p-4">
-                        <div className="relative w-40 h-24 rounded-lg overflow-hidden mr-4 flex-shrink-0">
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                            {completedVideos.has(video.id) ? (
-                              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                                <FiCheck className="w-7 h-7 text-white" />
-                              </div>
+                <div className="space-y-3">
+                  {course.lessons.map((lesson, index) => {
+                    const lessonProgress = getLessonProgress(courseId, lesson.id);
+                    const isCompleted = lessonProgress.completed || false;
+                    const isUnlocked = isLessonUnlocked(courseId, lesson, course.lessons);
+
+                    return (
+                      <motion.div
+                        key={lesson.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: index * 0.05 }}
+                        onClick={() => handleLessonClick(lesson)}
+                        className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border ${
+                          isCompleted
+                            ? "border-green-200 bg-green-50/30"
+                            : isUnlocked
+                            ? "border-gray-200 hover:border-blue-300 cursor-pointer"
+                            : "border-gray-200 opacity-60 cursor-not-allowed"
+                        }`}
+                      >
+                        <div className="flex items-center p-4 gap-4">
+                          {/* Lesson Type Icon */}
+                          <div
+                            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getLessonColor(
+                              lesson.type
+                            )}`}
+                          >
+                            {isUnlocked ? (
+                              getLessonIcon(lesson.type)
                             ) : (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-10 w-10 text-white"
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
+                              <FiLock className="w-5 h-5 text-gray-400" />
                             )}
                           </div>
-                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                            {video.duration}
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {video.title}
-                            </h3>
-                            {completedVideos.has(video.id) && (
-                              <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                                <FiCheck className="w-3 h-3" />
-                                Đã xem
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-500">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+
+                          {/* Lesson Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3
+                              className={`text-base font-semibold mb-1 ${
+                                isUnlocked ? "text-gray-900" : "text-gray-500"
+                              }`}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            {video.duration}
+                              {lesson.title}
+                            </h3>
+                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                {lesson.duration}
+                              </span>
+                              {lesson.type === "quiz" && (
+                                <span className="text-purple-600 text-xs font-medium bg-purple-100 px-2 py-0.5 rounded-full">
+                                  Passing: {lesson.passingScore}%
+                                </span>
+                              )}
+                              {lesson.type === "final-test" && (
+                                <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-0.5 rounded-full">
+                                  Yêu cầu: {lesson.passingScore}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Completion Checkbox */}
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            {isCompleted ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-green-500 rounded-md flex items-center justify-center">
+                                  <FiCheck className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="text-sm font-medium text-green-600 hidden sm:block">
+                                  Hoàn thành
+                                </span>
+                              </div>
+                            ) : isUnlocked ? (
+                              <div className="w-6 h-6 border-2 border-gray-300 rounded-md"></div>
+                            ) : (
+                              <FiLock className="w-5 h-5 text-gray-400" />
+                            )}
                           </div>
                         </div>
-                        <button
-                          onClick={() =>
-                            router.push(`/course/${courseId}/video/${video.id}`)
-                          }
-                          className={`px-4 py-2 rounded-lg transition font-medium ${
-                            completedVideos.has(video.id)
-                              ? "bg-green-500 text-white hover:bg-green-600"
-                              : "bg-blue-500 text-white hover:bg-blue-600"
-                          }`}
-                        >
-                          {completedVideos.has(video.id) ? "Xem lại" : "Xem"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
             </div>
@@ -274,7 +333,7 @@ export default function CourseDetailPage() {
                   <div className="flex items-center justify-between pb-4 border-b">
                     <span className="text-gray-600">Số bài học</span>
                     <span className="font-semibold text-gray-900">
-                      {course.lessonsCount}
+                      {course.lessons.length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between pb-4 border-b">
