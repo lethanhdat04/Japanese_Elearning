@@ -62,7 +62,7 @@ export default function LessonPage() {
   // Route to appropriate component based on lesson type
   if (lesson.type === "video") {
     // Get next lesson info - pass current lesson id to get next lesson after current
-    const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
+    const nextLesson = getNextLesson(courseId, course.lessons, lessonId) as any;
 
     // Handle video completion - refresh lesson list
     const handleVideoCompleted = () => {
@@ -310,7 +310,7 @@ export default function LessonPage() {
       setRefreshKey(prev => prev + 1);
 
       // Auto-navigate to next lesson after completing quiz
-      const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
+      const nextLesson = getNextLesson(courseId, course.lessons, lessonId) as any;
 
       setTimeout(() => {
         if (nextLesson) {
@@ -357,7 +357,7 @@ export default function LessonPage() {
       setRefreshKey(prev => prev + 1);
 
       // Auto-navigate to next lesson
-      const nextLesson = getNextLesson(courseId, course.lessons, lessonId);
+      const nextLesson = getNextLesson(courseId, course.lessons, lessonId) as any;
 
       setTimeout(() => {
         if (nextLesson) {
