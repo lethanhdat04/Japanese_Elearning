@@ -268,12 +268,12 @@ export default function CourseDetailPage() {
                                 </svg>
                                 {lesson.duration}
                               </span>
-                              {lesson.type === "quiz" && (
+                              {lesson.type === "quiz" && lesson.passingScore && (
                                 <span className="text-purple-600 text-xs font-medium bg-purple-100 px-2 py-0.5 rounded-full">
                                   Passing: {lesson.passingScore}%
                                 </span>
                               )}
-                              {lesson.type === "final-test" && (
+                              {lesson.type === "final-test" && lesson.passingScore && (
                                 <span className="text-orange-600 text-xs font-medium bg-orange-100 px-2 py-0.5 rounded-full">
                                   Yêu cầu: {lesson.passingScore}%
                                 </span>

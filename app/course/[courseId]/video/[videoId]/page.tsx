@@ -121,7 +121,7 @@ export default function VideoPage() {
                 keyPoints={video.keyPoints}
                 duration={video.duration}
                 courseId={courseId}
-                videoId={videoId}
+                lessonId={`video-${videoId}`}
               />
 
               {/* Course Info */}

@@ -334,8 +334,8 @@ export default function LessonPage() {
           <Quiz
             courseId={courseId}
             lessonId={lessonId}
-            questions={lesson.questions}
-            passingScore={lesson.passingScore}
+            questions={lesson.questions || []}
+            passingScore={lesson.passingScore || 70}
             onComplete={handleQuizComplete}
           />
         </div>
@@ -375,7 +375,7 @@ export default function LessonPage() {
           <PronunciationPractice
             courseId={courseId}
             lessonId={lessonId}
-            words={lesson.words}
+            words={lesson.words || []}
             onComplete={handlePronunciationComplete}
           />
         </div>
