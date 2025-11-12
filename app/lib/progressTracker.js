@@ -129,6 +129,10 @@ export const isCourseCompleted = (courseId, lessons) => {
 
 /**
  * Get next unlocked lesson after current lesson
+ * @param {number} courseId - The course ID
+ * @param {Array} lessons - Array of lesson objects
+ * @param {string|null} [currentLessonId=null] - Current lesson ID to find next after
+ * @returns {object|null} Next lesson object or null
  */
 export const getNextLesson = (courseId, lessons, currentLessonId = null) => {
   // If no current lesson specified, return first incomplete lesson
