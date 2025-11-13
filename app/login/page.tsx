@@ -15,7 +15,7 @@ export default function LoginPage() {
     // Fake login logic - in real app, you would validate credentials
     if (email && password) {
       // Simulate successful login and redirect to survey
-      router.push("/survey");
+      router.push("/home");
     }
   };
 
